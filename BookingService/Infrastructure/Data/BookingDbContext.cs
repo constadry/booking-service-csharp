@@ -61,6 +61,10 @@ public class BookingDbContext : DbContext
 
             entity.HasIndex(b => b.ResourceId)
                 .HasDatabaseName("idx_bookings_resource_id");
+
+            entity.Property(b => b.CancellationRequestedAt)
+                .HasColumnName("cancellation_requested_at")
+                .HasColumnType("timestamp with time zone");
         });
     }
 }
