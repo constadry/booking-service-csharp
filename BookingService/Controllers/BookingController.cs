@@ -60,6 +60,12 @@ public class BookingController : ControllerBase
     public async Task<BookingStatus?> GetStatus([FromRoute] long id)
         => await _bookingService.GetStatusById(id);
 
+    /// <summary>Получить агрегированную аналитику по бронированиям</summary>
+    [HttpGet("statistics")]
+    [ProducesResponseType<StatisticsResponse>(StatusCodes.Status200OK)]
+    public async Task<StatisticsResponse> GetStatistics()
+        => await _bookingService.GetStatistics();
+
     /// <summary>Отменить бронирование</summary>
     [HttpPost("{id:long}/cancel")]
     [ProducesResponseType(StatusCodes.Status200OK)]
