@@ -90,8 +90,7 @@ public class Booking
                 break;
 
             case BookingStatus.Confirmed:
-                var dateTime = currentDate.ToDateTime(new TimeOnly(0));
-                CancellationRequestedAt = new DateTimeOffset(dateTime, TimeZoneInfo.Utc.GetUtcOffset(dateTime));
+                CancellationRequestedAt = DateTimeOffset.UtcNow;
                 Status = BookingStatus.CancellationPending;
                 break;
 

@@ -143,10 +143,19 @@ public class BookingService
             return;
         }
 
+        if (booking.Status == BookingStatus.CancellationPending)
+        {
+            _logger.LogWarning("Бронирование: id={Id}, статус={Status} ожидает отмены, подтвердить не получится",
+                booking.Id, booking.Status);
+            return;
+        }
+
         _logger.LogInformation("Найдено бронирование: id={Id}, статус={Status}. Подтверждаем...",
             booking.Id, booking.Status);
 
         booking.Confirm();
+
+        await _repository.ConcurrencyBulkSaveAsync(booking);
 
         _logger.LogInformation("Бронирование успешно подтверждено: id={Id}, новый статус={Status}",
             booking.Id, booking.Status);
