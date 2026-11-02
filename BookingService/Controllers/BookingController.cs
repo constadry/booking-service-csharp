@@ -16,11 +16,13 @@ public class BookingController : ControllerBase
 {
     private readonly Services.BookingService _bookingService;
     private readonly BookingMapper _mapper;
+    private readonly BookingStatusHistoryMapper _historyMapper;
 
-    public BookingController(Services.BookingService bookingService, BookingMapper mapper)
+    public BookingController(Services.BookingService bookingService, BookingMapper mapper, BookingStatusHistoryMapper historyMapper)
     {
         _bookingService = bookingService;
         _mapper = mapper;
+        _historyMapper = historyMapper;
     }
 
     /// <summary>Создать новое бронирование</summary>
@@ -72,4 +74,9 @@ public class BookingController : ControllerBase
     public async Task Cancel([FromRoute] long id)
         => await _bookingService.CancelBooking(id);
 
+    /// <summary>Получить историю изменения статусов сущности бронирования</summary>
+    [HttpGet("bookings/{id:long}/history")]
+    [ProducesResponseType<List<BookingStatusHistoryResponse>>(StatusCodes.Status200OK)]
+    public async Task<List<BookingStatusHistoryResponse>> GetStatusHistory(long id)
+        => _historyMapper.ToResponseList(await _bookingService.GetBookingHistory(id));
 }

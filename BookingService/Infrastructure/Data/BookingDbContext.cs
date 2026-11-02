@@ -1,11 +1,13 @@
 using BookingService.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Transactions;
 
 namespace BookingService.Infrastructure.Data;
 
 public class BookingDbContext : DbContext
 {
     public DbSet<Booking> Bookings => Set<Booking>();
+    public DbSet<BookingStatusHistory> BookingStatusHistories => Set<BookingStatusHistory>();
 
     public BookingDbContext(DbContextOptions<BookingDbContext> options) : base(options) { }
 
@@ -75,5 +77,92 @@ public class BookingDbContext : DbContext
                 .HasDatabaseName("idx_bookings_cancellation_pending")
                 .HasFilter("status = 4");
         });
+
+        modelBuilder.Entity<BookingStatusHistory>(entity =>
+        {
+            entity.ToTable("booking_status_history");
+
+            entity.HasKey(b => b.Id);
+
+            entity.Property(b => b.Id)
+                .HasColumnName("id")
+                .UseIdentityByDefaultColumn();
+
+            entity.HasOne<Booking>()
+                .WithMany()
+                .HasForeignKey(h => h.BookingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.Property(b => b.BookingId)
+                .HasColumnName("booking_id")
+                .HasColumnType("bigint");
+
+            entity.Property(b => b.StatusFrom)
+                .HasColumnName("status_from")
+                .HasConversion<int>();
+
+            entity.Property(b => b.StatusTo)
+                .HasColumnName("status_to")
+                .HasConversion<int>()
+                .IsRequired();
+
+            entity.Property(b => b.ChangedAt)
+                .HasColumnName("changed_at")
+                .HasColumnType("timestamp with time zone")
+                .IsRequired();
+        });
+    }
+
+    public async override Task<int> SaveChangesAsync(CancellationToken ct = default)
+    {
+        using var transaction = await Database.BeginTransactionAsync();
+
+        try
+        {
+            var modifiedHistory = new List<BookingStatusHistory>();
+            var addedHistory = new List<BookingStatusHistory>();
+            var addedEntries = ChangeTracker.Entries<Booking>().Where(x => x.State == EntityState.Added).ToList();
+            var modifiedEntries = ChangeTracker.Entries<Booking>().Where(x => x.State == EntityState.Modified).ToList();
+            foreach (var entry in modifiedEntries)
+            {
+                var statusFrom = entry.OriginalValues.GetValue<BookingStatus>(nameof(entry.Entity.Status));
+                var statusTo = entry.Entity.Status;
+                modifiedHistory.Add(
+                    BookingStatusHistory.Create
+                    (
+                        entry.Entity.Id,
+                        statusFrom,
+                        statusTo
+                    ));
+            }
+
+            await BookingStatusHistories.AddRangeAsync(modifiedHistory);
+
+            await base.SaveChangesAsync(ct);
+
+            foreach (var entry in addedEntries)
+            {
+                var statusTo = entry.Entity.Status;
+                addedHistory.Add(
+                    BookingStatusHistory.Create
+                    (
+                        entry.Entity.Id,
+                        BookingStatus.None,
+                        statusTo
+                    ));
+            }
+
+            await BookingStatusHistories.AddRangeAsync(addedHistory);
+
+            await transaction.CommitAsync();
+
+            return await base.SaveChangesAsync(ct);
+        }
+        catch (Exception)
+        {
+            // Reverts all database changes made during this transaction block
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 }

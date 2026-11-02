@@ -50,6 +50,11 @@ public class BookingRepository
             .ToListAsync();
     }
 
+    public async Task<List<Entities.BookingStatusHistory>> GetBookingHistoryAsync(long bookingId)
+    {
+        return await _context.BookingStatusHistories.Where(x => x.BookingId == bookingId).ToListAsync();
+    }
+
     /// <summary>
     /// Получить только статус бронирования по ID
     /// </summary>
