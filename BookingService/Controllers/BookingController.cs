@@ -75,7 +75,7 @@ public class BookingController : ControllerBase
         => await _bookingService.CancelBooking(id);
 
     /// <summary>Получить историю изменения статусов сущности бронирования</summary>
-    [HttpGet("bookings/{id:long}/history")]
+    [HttpGet("{id:long}/history")]
     [ProducesResponseType<List<BookingStatusHistoryResponse>>(StatusCodes.Status200OK)]
     public async Task<List<BookingStatusHistoryResponse>> GetStatusHistory(long id)
         => _historyMapper.ToResponseList(await _bookingService.GetBookingHistory(id));

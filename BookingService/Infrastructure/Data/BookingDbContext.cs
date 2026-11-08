@@ -1,6 +1,5 @@
 using BookingService.Entities;
 using Microsoft.EntityFrameworkCore;
-using System.Transactions;
 
 namespace BookingService.Infrastructure.Data;
 
@@ -115,14 +114,16 @@ public class BookingDbContext : DbContext
 
     public async override Task<int> SaveChangesAsync(CancellationToken ct = default)
     {
-        using var transaction = await Database.BeginTransactionAsync();
+        using var transaction = await Database.BeginTransactionAsync(ct);
 
         try
         {
             var modifiedHistory = new List<BookingStatusHistory>();
             var addedHistory = new List<BookingStatusHistory>();
+            var modifiedEntries = ChangeTracker.Entries<Booking>()
+                .Where(x => x.State == EntityState.Modified && x.Property(nameof(x.Entity.Status)).IsModified)
+                .ToList();
             var addedEntries = ChangeTracker.Entries<Booking>().Where(x => x.State == EntityState.Added).ToList();
-            var modifiedEntries = ChangeTracker.Entries<Booking>().Where(x => x.State == EntityState.Modified).ToList();
             foreach (var entry in modifiedEntries)
             {
                 var statusFrom = entry.OriginalValues.GetValue<BookingStatus>(nameof(entry.Entity.Status));
@@ -138,7 +139,7 @@ public class BookingDbContext : DbContext
 
             await BookingStatusHistories.AddRangeAsync(modifiedHistory);
 
-            await base.SaveChangesAsync(ct);
+            var result = await base.SaveChangesAsync(ct);
 
             foreach (var entry in addedEntries)
             {
@@ -147,21 +148,23 @@ public class BookingDbContext : DbContext
                     BookingStatusHistory.Create
                     (
                         entry.Entity.Id,
-                        BookingStatus.None,
+                        null,
                         statusTo
                     ));
             }
 
             await BookingStatusHistories.AddRangeAsync(addedHistory);
 
-            await transaction.CommitAsync();
+            result += await base.SaveChangesAsync(ct);
 
-            return await base.SaveChangesAsync(ct);
+            await transaction.CommitAsync(ct);
+
+            return result;
         }
         catch (Exception)
         {
             // Reverts all database changes made during this transaction block
-            await transaction.RollbackAsync();
+            await transaction.RollbackAsync(ct);
             throw;
         }
     }

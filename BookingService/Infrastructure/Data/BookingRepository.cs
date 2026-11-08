@@ -52,7 +52,7 @@ public class BookingRepository
 
     public async Task<List<Entities.BookingStatusHistory>> GetBookingHistoryAsync(long bookingId)
     {
-        return await _context.BookingStatusHistories.Where(x => x.BookingId == bookingId).ToListAsync();
+        return await _context.BookingStatusHistories.Where(x => x.BookingId == bookingId).OrderBy(x => x.ChangedAt).ToListAsync();
     }
 
     /// <summary>
