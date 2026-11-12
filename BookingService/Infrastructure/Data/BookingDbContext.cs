@@ -7,6 +7,7 @@ public class BookingDbContext : DbContext
 {
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<BookingStatusHistory> BookingStatusHistories => Set<BookingStatusHistory>();
+    public DbSet<ProcessedEvent> ProcessedEvents => Set<ProcessedEvent>();
 
     public BookingDbContext(DbContextOptions<BookingDbContext> options) : base(options) { }
 
@@ -107,6 +108,21 @@ public class BookingDbContext : DbContext
 
             entity.Property(b => b.ChangedAt)
                 .HasColumnName("changed_at")
+                .HasColumnType("timestamp with time zone")
+                .IsRequired();
+        });
+
+        modelBuilder.Entity<ProcessedEvent>(entity =>
+        {
+            entity.ToTable("processed_events");
+
+            entity.HasKey(e => e.EventId);
+            entity.Property(e => e.EventId)
+                .HasColumnName("event_id")
+                .HasColumnType("uuid");
+
+            entity.Property(e => e.ProcessedAt)
+                .HasColumnName("processed_at")
                 .HasColumnType("timestamp with time zone")
                 .IsRequired();
         });

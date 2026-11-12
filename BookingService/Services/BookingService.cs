@@ -6,7 +6,6 @@ using BookingService.Infrastructure.Data;
 using BookingService.Infrastructure.Messaging;
 using BookingService.Infrastructure.Messaging.Contracts;
 using BookingService.Infrastructure.Notifications;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace BookingService.Services;

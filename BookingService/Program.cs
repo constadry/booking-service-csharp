@@ -39,6 +39,7 @@ builder.Services.AddDbContext<BookingDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddScoped<BookingRepository>();
+builder.Services.AddScoped<ProcessedEventRepository>();
 
 // ---- Business Services ----
 builder.Services.AddScoped<BookingService.Services.BookingService>();
