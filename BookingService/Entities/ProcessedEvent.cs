@@ -9,7 +9,7 @@
         {
             if (eventId == Guid.Empty)
             {
-                throw new ArgumentNullException(nameof(eventId));
+                throw new ArgumentException(nameof(eventId));
             }
 
             return new ProcessedEvent

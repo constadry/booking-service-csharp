@@ -2,7 +2,6 @@
 using BookingService.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using Rebus.Messages;
 
 namespace BookingService.Services
 {
