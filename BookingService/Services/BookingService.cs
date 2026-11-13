@@ -28,6 +28,8 @@ public class BookingService
     // [Task 10] Опциональная зависимость — существующие тесты создают сервис без неё
     private readonly IMemoryCache? _cache;
 
+    private const int DB_CONCURRENCY_TRIES_COUNT = 10;
+
     public BookingService(
         BookingRepository repository,
         BookingEventPublisher publisher,
@@ -155,7 +157,7 @@ public class BookingService
 
         booking.Confirm();
 
-        await _repository.ConcurrencyBulkSaveAsync(booking);
+        await ConcurrencyBulkSaveAsync(booking);
 
         _logger.LogInformation("Бронирование успешно подтверждено: id={Id}, новый статус={Status}",
             booking.Id, booking.Status);
@@ -205,6 +207,40 @@ public class BookingService
 
         _logger.LogInformation("Откат отмены бронирования успешно завершен: id={Id}, новый статус={Status}",
             booking.Id, booking.Status);
+    }
+
+    /// <summary>
+    /// Обработка DbUpdateConcurrencyException, повтор операции с перезагрузкой сущности
+    /// </summary>
+    /// <param name="booking"></param>
+    /// <returns></returns>
+    private async Task ConcurrencyBulkSaveAsync(Booking booking)
+    {
+        bool saveFailed = false;
+        int tryCount = 0;
+
+        do
+        {
+            try
+            {
+                await _repository.SaveAsync(booking);
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                saveFailed = true;
+                tryCount++;
+
+                await ex.Entries.Single().ReloadAsync();
+
+                booking.Confirm();
+
+                if (booking.Status == BookingStatus.CancellationPending)
+                {
+                    throw new BusinessException($"Бронирование с id={booking.Id} уже было отменено, невозможно подтвердить");
+                }
+            }
+
+        } while (saveFailed && tryCount <= DB_CONCURRENCY_TRIES_COUNT);
     }
 
     // TODO: Task 02 — реализовать агрегирующий запрос статистики бронирований
