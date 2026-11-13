@@ -1,3 +1,4 @@
+using BookingService.BackgroundJobs;
 using BookingService.Configuration;
 using BookingService.Exceptions;
 using BookingService.Infrastructure.Data;
@@ -66,6 +67,8 @@ builder.Services.AddRebus(
 
 builder.Services.AddRebusHandler<BookingEventsHandler>();
 builder.Services.AddRebusHandler<CancelBookingErrorsHandler>();
+
+builder.Services.AddHostedService<StuckCancellationsJob>();
 
 // ---- App ----
 var app = builder.Build();
