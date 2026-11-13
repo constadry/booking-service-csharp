@@ -90,8 +90,10 @@ public class Booking
                 break;
 
             case BookingStatus.Confirmed:
-                var dateTime = currentDate.ToDateTime(new TimeOnly(0));
-                CancellationRequestedAt = new DateTimeOffset(dateTime, TimeZoneInfo.Utc.GetUtcOffset(dateTime));
+                if (currentDate >= BookedFrom)
+                    throw new BusinessException("Невозможно отменить бронирование, так как оно уже началось или завершилось");
+
+                CancellationRequestedAt = DateTimeOffset.UtcNow;
                 Status = BookingStatus.CancellationPending;
                 break;
 
@@ -109,6 +111,7 @@ public class Booking
             throw new BusinessException($"Статус заявки некорректен, заявка должна быть в статусе {BookingStatus.CancellationPending}");
 
         Status = BookingStatus.Cancelled;
+        CancellationRequestedAt = null;
     }
 
     public void RollbackCancellation()
@@ -116,7 +119,7 @@ public class Booking
         switch (Status)
         {
             case BookingStatus.Confirmed:
-                break;
+                throw new BusinessException("Некорректный статус для отката");
             case BookingStatus.CancellationPending:
                 Status = BookingStatus.Confirmed;
                 CancellationRequestedAt = null;
