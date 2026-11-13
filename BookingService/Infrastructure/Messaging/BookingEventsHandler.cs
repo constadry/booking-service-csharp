@@ -1,5 +1,6 @@
 using BookingService.Infrastructure.Data;
 using BookingService.Infrastructure.Messaging.Contracts;
+using BookingService.Services;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Rebus.Handlers;
@@ -17,14 +18,14 @@ public class BookingEventsHandler :
 {
     private readonly Services.BookingService _bookingService;
 
-    private readonly ProcessedEventRepository _processedEventRepository;
+    private readonly EventProcessingService _eventProcessingService;
     private readonly ILogger<BookingEventsHandler> _logger;
 
-    public BookingEventsHandler(Services.BookingService bookingService, ILogger<BookingEventsHandler> logger, ProcessedEventRepository processedEventRepository)
+    public BookingEventsHandler(Services.BookingService bookingService, ILogger<BookingEventsHandler> logger, EventProcessingService eventProcessingService)
     {
         _bookingService = bookingService;
         _logger = logger;
-        _processedEventRepository = processedEventRepository;
+        _eventProcessingService = eventProcessingService;
     }
 
     public async Task Handle(BookingJobConfirmed message)
@@ -33,38 +34,9 @@ public class BookingEventsHandler :
             "Получено событие BookingJobConfirmed: eventId={EventId}, requestId={RequestId}",
             message.EventId, message.RequestId);
 
-        var processedEvent = await _processedEventRepository.FindByIdAsync(message.EventId);
-
-        if (processedEvent != null)
-        {
-            _logger.LogWarning(
-                "Событие BookingJobConfirmed с eventId={EventId} уже обработано ранее, повторная обработка игнорируется",
-                message.EventId);
-            return;
-        }
-
-        _processedEventRepository.Save(new Entities.ProcessedEvent
-        {
-            EventId = message.EventId,
-            ProcessedAt = DateTime.UtcNow
-        });
-
-        try
-        {
+        await _eventProcessingService.ProcessEvent(message.EventId, "BookingJobConfirmed", async () => {
             await _bookingService.HandleBookingJobConfirmed(message.RequestId);
-        }
-        catch (DbUpdateException ex)
-        {
-            if (ex.InnerException is PostgresException sqlEx)
-            {
-                if (sqlEx.SqlState == PostgresErrorCodes.UniqueViolation)
-                {
-                    _logger.LogWarning(
-                        "Событие BookingJobConfirmed с eventId={EventId} уже обработано ранее, повторная обработка игнорируется",
-                        message.EventId);
-                }
-            }
-        }
+            });
     }
 
     public async Task Handle(BookingJobDenied message)
@@ -73,37 +45,9 @@ public class BookingEventsHandler :
             "Получено событие BookingJobDenied: eventId={EventId}, requestId={RequestId}",
             message.EventId, message.RequestId);
 
-        var processedEvent = await _processedEventRepository.FindByIdAsync(message.EventId);
-
-        if (processedEvent != null)
-        {
-            _logger.LogWarning(
-                "Событие BookingJobDenied с eventId={EventId} уже обработано ранее, повторная обработка игнорируется",
-                message.EventId);
-            return;
-        }
-
-        _processedEventRepository.Save(new Entities.ProcessedEvent
-        {
-            EventId = message.EventId,
-            ProcessedAt = DateTime.UtcNow
-        });
-
-        try
-        {
-            await _bookingService.HandleBookingJobDenied(message.RequestId);
-        }
-        catch (DbUpdateException ex)
-        {
-            if (ex.InnerException is PostgresException sqlEx)
-            {
-                if (sqlEx.SqlState == PostgresErrorCodes.UniqueViolation)
-                {
-                    _logger.LogWarning(
-                        "Событие BookingJobDenied с eventId={EventId} уже обработано ранее, повторная обработка игнорируется",
-                        message.EventId);
-                }
-            }
-        }
+        await _eventProcessingService.ProcessEvent(message.EventId, "BookingJobDenied", 
+            async () => {
+                await _bookingService.HandleBookingJobDenied(message.RequestId);
+            });
     }
 }

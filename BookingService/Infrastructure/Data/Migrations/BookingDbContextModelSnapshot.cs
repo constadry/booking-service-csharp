@@ -119,7 +119,6 @@ namespace BookingService.Infrastructure.Data.Migrations
             modelBuilder.Entity("BookingService.Entities.ProcessedEvent", b =>
                 {
                     b.Property<Guid>("EventId")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("event_id");
 

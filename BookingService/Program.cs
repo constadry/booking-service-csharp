@@ -43,6 +43,7 @@ builder.Services.AddScoped<ProcessedEventRepository>();
 
 // ---- Business Services ----
 builder.Services.AddScoped<BookingService.Services.BookingService>();
+builder.Services.AddScoped<BookingService.Services.EventProcessingService>();
 builder.Services.AddScoped<BookingMapper>();
 builder.Services.AddScoped<BookingStatusHistoryMapper>();
 builder.Services.AddSingleton<ICurrentDateTimeProvider, CurrentDateTimeProvider>();

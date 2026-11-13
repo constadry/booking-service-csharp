@@ -118,6 +118,7 @@ public class BookingDbContext : DbContext
 
             entity.HasKey(e => e.EventId);
             entity.Property(e => e.EventId)
+                .ValueGeneratedNever()
                 .HasColumnName("event_id")
                 .HasColumnType("uuid");
 
