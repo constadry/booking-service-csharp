@@ -51,7 +51,7 @@ public class Booking
             BookedFrom = bookedFrom,
             BookedTo = bookedTo,
             CreatedAt = createdAt
-        };
+        }; 
     }
 
     /// <summary>
