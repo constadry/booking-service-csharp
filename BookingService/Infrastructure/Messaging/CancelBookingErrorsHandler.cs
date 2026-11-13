@@ -29,7 +29,7 @@ public class CancelBookingErrorsHandler : IHandleMessages<CancelBookingJobByRequ
 
         await _processingEventService.ProcessEvent(message.EventId, "CancellationError",
             async () => {
-                await _bookingService.HandleBookingJobDenied(message.RequestId);
+                await _bookingService.HandleCancellationError(message.RequestId);
             });
     }
 }

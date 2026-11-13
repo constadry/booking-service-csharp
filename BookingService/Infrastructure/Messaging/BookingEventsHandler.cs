@@ -1,10 +1,6 @@
-using BookingService.Infrastructure.Data;
 using BookingService.Infrastructure.Messaging.Contracts;
 using BookingService.Services;
-using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using Rebus.Handlers;
-using System.Data.Common;
 
 namespace BookingService.Infrastructure.Messaging;
 

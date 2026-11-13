@@ -43,22 +43,12 @@ namespace BookingService.Services
             {
                 await action();
             }
-            catch (DbUpdateException ex)
+            catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
             {
-                if (ex.InnerException is PostgresException sqlEx)
-                {
-                    if (sqlEx.SqlState == PostgresErrorCodes.UniqueViolation)
-                    {
-                        _logger.LogWarning(
-                            "Событие {EventName} с eventId={EventId} уже обработано ранее, повторная обработка игнорируется",
-                            eventName,
-                            eventId);
-                    }
-                } else
-                {
-                    _logger.LogError(ex, "Ошибка при обработке события {EventName} с eventId={EventId}", eventName, eventId);
-                    throw;
-                }
+                _logger.LogWarning(
+                    "Событие {EventName} с eventId={EventId} уже обработано ранее, повторная обработка игнорируется",
+                    eventName,
+                    eventId);
             }
         }
     }
